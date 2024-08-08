@@ -7,8 +7,8 @@ import (
 	"log/slog"
 	"net/http"
 	"sync"
-
-	"github.com/rocketseat-education/semana-tech-go-react-server/internal/store/pgstore"
+	
+	"github.com/EbersonSilva/tech-go-react-server/internal/store/pgstore"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -39,7 +39,8 @@ func NewHandler(q *pgstore.Queries) http.Handler {
 	 }
 
 	 r := chi.NewRouter()
-	 r.Use(middleware.RequestId, middleware.Recoverer, middleware.Logger)
+
+	 r.Use(middleware.RequestID, middleware.Recoverer, middleware.Logger)
 
 	 r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{"https://*", "http://*"},
@@ -57,12 +58,9 @@ func NewHandler(q *pgstore.Queries) http.Handler {
 			r.Post("/", a.handleCreateRoom)
 			r.Get("/", a.handleGetRooms)
 
-			r.Route("/{room_id}", func(r chi.Router){ //Parametro de caminho 
-				r.Get("/", a.handleGetRoom)
-
-				r.Route("/messages", func(r chi.Router) {
-					r.Post("/", a.handleCreateRoomMessage)
-					r.Get("/", a.handleGetRoomMessages)
+			r.Route("/{room_id}/messages", func(r chi.Router) {
+				r.Get("/", a.handleGetRoomMessages)
+				r.Post("/", a.handleCreateRoomMessages)
 
 						r.Route("/{message_id}", func(r chi.Router) {
 							r.Get("/", a.handleGetRoomMessage)
@@ -73,13 +71,12 @@ func NewHandler(q *pgstore.Queries) http.Handler {
 				})
 			})
 	 	})
-	})
 
 	 a.r = r
 	 return a
 }
 // Criação de metodos
-func (h apiapiHAndler) handleSubscribe(w http.ResponseWriter, r *http.Request){
+func (h apiHandler) handleSubscribe(w http.ResponseWriter, r *http.Request){
 	rawRoomID := chi.URLParam(r, "room_id")
 	roomID, err := uuid.Parse(rawRoomID)
 	if err != nil{
@@ -87,9 +84,9 @@ func (h apiapiHAndler) handleSubscribe(w http.ResponseWriter, r *http.Request){
 		return
 	}
 
-	_, err := h.q.GetRoom(r.Context(), roomID)
+	_, err = h.q.GetRoom(r.Context(), roomID)
 	if err != nil{
-		if errors.IS(err, pgx.ErrNoRows){
+		if errors.Is(err, pgx.ErrNoRows){
 			http.Error(w, "room not found", http.StatusBadRequest)
 			return
 		}
@@ -98,7 +95,7 @@ func (h apiapiHAndler) handleSubscribe(w http.ResponseWriter, r *http.Request){
 		return
 	}
 	// Conexão websocket
-	c, err := h.upgrader(w, r, nil) //nil => null
+	c, err := h.upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		slog.Warn("failed to upgrade connection", "error", err)
 		http.Error(w, "failed to upgrade to ws connection", http.StatusBadRequest)
@@ -124,7 +121,7 @@ h.mu.Lock()
 		h.mu.Unlock()
 
 }
-func (h apiapiHAndler) handleCreateRoom(w http.ResponseWriter, r *http.Request){
+func (h apiHandler) handleCreateRoom(w http.ResponseWriter, r *http.Request){
 	type _body struct {
 		Theme string `json:"theme"`
 	}
@@ -150,10 +147,10 @@ func (h apiapiHAndler) handleCreateRoom(w http.ResponseWriter, r *http.Request){
 	w.Header().Set("Content-Type", "application/json")
 	_, _ = w.Write(data)
 }
-func (h apiapiHAndler) handleGetRooms(w http.ResponseWriter, r *http.Request){}
-func (h apiapiHAndler) handleCreateRoomMessage(w http.ResponseWriter, r *http.Request){}
-func (h apiapiHAndler) handleGetRoomMessages(w http.ResponseWriter, r *http.Request){}
-func (h apiapiHAndler) handleGetRoomMessage(w http.ResponseWriter, r *http.Request){}
-func (h apiapiHAndler) handleReactToMessage(w http.ResponseWriter, r *http.Request){}
-func (h apiapiHAndler) handleRemoveReactFromMessage(w http.ResponseWriter, r *http.Request){}
-func (h apiapiHAndler) handleMarkMessageAsAnswered(w http.ResponseWriter, r *http.Request){}
+func (h apiHandler) handleGetRooms(w http.ResponseWriter, r *http.Request){}
+func (h apiHandler) handleCreateRoomMessages(w http.ResponseWriter, r *http.Request){}
+func (h apiHandler) handleGetRoomMessages(w http.ResponseWriter, r *http.Request){}
+func (h apiHandler) handleGetRoomMessage(w http.ResponseWriter, r *http.Request){}
+func (h apiHandler) handleReactToMessage(w http.ResponseWriter, r *http.Request){}
+func (h apiHandler) handleRemoveReactFromMessage(w http.ResponseWriter, r *http.Request){}
+func (h apiHandler) handleMarkMessageAsAnswered(w http.ResponseWriter, r *http.Request){}
