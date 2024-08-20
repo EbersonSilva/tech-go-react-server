@@ -12,3 +12,5 @@ Principais ferramentas:
 - [CORS](https://github.com/go-chi/cors)
 - [Gorilla ](https://github.com/gorilla/websocket) Permite a criação de metodos em GO
 - Comandos para rodar "docker compose up -d" e "go run ./cmd/wsrs/main.go"
+
+O front-end voce encontra no seguinte endereço [tech-go-react-web](https://github.com/EbersonSilva/tech-go-react-web)
